@@ -1,0 +1,76 @@
+#!/bin/bash
+#NAMESPACE=route_ajax
+
+dependencies::depends "http/http"
+dependencies::depends "http/webauth"
+
+function headers() {
+    http::set_header "Content-Type" "text/html"
+}
+
+function redirect_home() {
+    http::set_header "Refresh" "0;url=/cgi-bin/v2/app.sh"
+}
+
+function timer() {
+    echo `cat /volatile/ffout | tr "\r" "\n" | tail -n 1 | cut -d= -f3 | cut -d\  -f1` / `cat ../current_meta | cut -d\: -f2- | cut -d, -f1 | sed -e 's/[hms]//g'`
+}
+
+function current_id() {
+    cat $DIR/../current_id 
+}
+
+function previous_id() {
+    cat $DIR/../previous_id 
+}
+
+function next_id() {
+    local peekNext=`curl -d '{"vhost":"/","name":"youtube-playlist-queue","truncate":"50000","ackmode":"ack_requeue_true","encoding":"auto","count":"1"}' -q http://rabbits:rabbits@rabbits:15672/api/queues/%2f/youtube-playlist-queue/get 2>/dev/null | jq .[].payload | head | tr -d '"'`
+    if [[ $peekNext == "" ]]
+    then
+	peekNext=`curl -d '{"vhost":"/","name":"idle-queue","truncate":"50000","ackmode":"ack_requeue_true","encoding":"auto","count":"1"}' -q http://rabbits:rabbits@rabbits:15672/api/queues/%2f/idle-queue/get 2>/dev/null | jq .[].payload | head | tr -d '"'`
+    fi
+    echo $peekNext
+}
+
+function title(id) {
+    cat $DIR/../cache/$id.info.json | jq .title | tr -d '"'
+}
+
+function messages(count order) {
+    echo "["
+    this::rawmessages "$count" "$order" | sed 's/$/,/g'
+    echo '{"uid":"", "date":"", "message":""}]'
+}
+
+function rawmessages(count order) {
+    if [[ $count -gt 20 ]]; then count=20; fi
+    if [[ $order != "-1" ]]; then order=0; fi
+
+    redis-cli -h redis --raw LRANGE messages 0 25
+}
+
+function setmessage(uid message) {
+    local msg=`echo $message  | sed 's/[^a-zA-Z0-9.,:;!?@~#$%^&*()+ -]//g' | cut -c 1-160`
+    if [[ $msg == "" ]]
+    then 
+	return 0
+    fi
+    date=`date -u`
+    redis-cli -h redis --raw LPUSH messages "{\"uid\":\"$uid\", \"date\":\"$date\", \"message\":\"$msg\"}"
+}
+
+function thumbnail(id) {
+    if [[ -f $DIR/../cache/$id.jpg ]]
+    then
+	http::serve_file $DIR/../cache/$id.jpg
+    else
+	if [[ -f $DIR/../cache/$id.webp ]]
+	then
+		convert $DIR/../cache/$id.webp $DIR/../cache/$id.jpg
+		http::serve_file $DIR/../cache/$id.jpg
+	else
+		http::serve_file $DIR/data/broken.jpg
+	fi
+    fi
+}

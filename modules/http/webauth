@@ -1,0 +1,53 @@
+#!/bin/bash
+#NAMESPACE=webauth
+
+dependencies::depends "http/http"
+
+function init() {
+    namespaced SID=`http::get_cookie "SID" | sed 's/[^a-zA-Z0-9.,:;!?@~#$%^&*()+ -]//g'
+`
+    namespaced AUTHORIZED=0
+    if [[ ${namespaced SID} == "" ]]
+    then
+	namespaced SID=`cat /proc/sys/kernel/random/uuid`
+        http::set_cookie "SID" "${namespaced SID}" "`date -d 'now 30 days'`"
+    fi
+
+    if [[ ${namespaced AUTHORIZED} -lt 1 ]]
+    then
+	if [[ `redis-cli -h redis get ${namespaced SID}:authorized` -gt 0 ]]
+	then
+	    namespaced AUTHORIZED=1
+	    if [[ `redis-cli -h redis get ${namespaced SID}:authorized_at` == "" ]]
+	    then
+		redis-cli --raw -h redis set ${namespaced SID}:authorized_at `date +'%s'` > /dev/null
+	    fi
+	    return;
+	fi
+    fi
+
+    if [[ `http::get_param authkey` == $AUTHKEY ]]
+    then
+	namespaced AUTHORIZED=1
+	redis-cli --raw -h redis set ${namespaced SID}:authorized 1 > /dev/null
+	redis-cli --raw -h redis set ${namespaced SID}:authorized_at `date +'%s'` > /dev/null
+    fi
+}
+
+function session_time() {
+    let seconds=`date +'%s'`-`redis-cli -h redis get ${namespaced SID}:authorized_at`
+    echo $seconds
+}
+
+function getid() {
+    echo ${namespaced SID}
+}
+
+function logout() {
+	namespaced AUTHORIZED=0
+	redis-cli --raw -h redis del ${namespaced SID}:authorized > /dev/null
+}
+
+function is_authorized() {
+    echo ${namespaced AUTHORIZED}
+}

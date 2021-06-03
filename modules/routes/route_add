@@ -1,0 +1,79 @@
+#!/bin/bash
+#NAMESPACE=route_add
+
+dependencies::depends "http/http"
+dependencies::depends "http/webauth"
+dependencies::depends "coolcat/coolcat"
+
+function headers() {
+    http::set_header "Content-Type" "text/html"
+    if [[ `webauth::is_authorized` -gt 0 ]]
+    then
+	http::set_header "Status" "201"
+	http::set_header "Refresh" "1; url=/cgi-bin/v2/app.sh?route=default"
+    else
+        http::set_header "Status" "403"
+	return 1
+    fi
+
+    if [[ `coolcat::is_cool` -lt 1 ]]
+    then
+        http::set_header "Status" "403"
+    fi
+}
+
+function add_file() {
+    if [[ `webauth::is_authorized` -lt 1 ]]
+    then
+	echo "LOL NO"
+	return 1
+    fi
+    
+    if [[ `coolcat::is_cool` -lt 1 ]]
+    then
+	echo "Sorry, your coolcat status does not allow you to do that"
+	return 1
+    fi    
+
+    file_name=`http::get_file newfile`
+    if [[ `http::get_mimetype $file_name | egrep -c "^audio/*"` -lt 0 ]]
+    then 
+	return 1
+    fi
+    new_file_name=cust`http::get_original_filename $file_name | tr -d '.' | tr -d '/' | tr -d '\' | tr -d "\n" | tr -d "\r" | tr -d "(" | tr -d ")" | tr -d " "`
+    cp $file_name $DIR/../cache/$new_file_name
+    if [[ $? == 0 ]]
+    then
+	this::queue $new_file_name
+    fi
+}
+
+function show() {
+    if [[ `coolcat::is_cool` -lt 1 ]]
+    then
+	echo "Sorry, your coolcat status does not allow you to do that"
+	return 1
+    fi    
+
+    if [[ `webauth::is_authorized` -gt 0 ]]
+    then
+	local id=`http::get_post ytid`
+	if [[ `echo $id | grep 'list' -c` -gt 0 ]]
+	then
+	    echo "let's not upload lists OK? JUST ID PLOX";
+	fi
+	echo $id;
+	if [[ $id == "" ]]
+	then
+	    return 1
+	fi
+	this::queue $id
+    else 
+	echo "LOL NO"
+    fi
+}
+
+function queue(id) {
+    amqp-publish -u amqp://rabbits:rabbits@rabbits:5672 -e youtube-playlist-queue -r youtube-playlist-queue -p -b $id
+    coolcat::coolcat_action
+}

@@ -1,0 +1,241 @@
+#!/bin/bash
+#NAMESPACE=route_default
+
+dependencies::depends "http/webauth"
+dependencies::depends "routes/route_ajax"
+dependencies::depends "coolcat/coolcat"
+
+function headers()
+{
+    http::set_header "Refresh" "60"
+}
+
+function ajax_scripts() {
+cat << JSCODE
+<script type=text/javascript>
+`cat $DIR/data/scripts.js`
+</script>
+JSCODE
+}
+
+function show() {
+cat << HTMLCODE
+    <html>
+    <head>
+        <title>Tugaza @ `date --utc`</title>
+    </head>
+    <body style="font-family: monospace;">
+    `this::player`
+    <table>
+    <tr><td>
+HTMLCODE
+    if [[ `webauth::is_authorized` -gt 0 ]]
+    then
+        this::commands
+    else
+        this::login_table
+    fi
+
+cat << HTMLCODE
+    </td>
+    <td>`this::statistics`</td></tr>
+    <tr><td colspan=2>`this::chat`</td></tr>
+    </table>
+    `this::ajax_scripts`
+    </body>
+</html>
+HTMLCODE
+}
+
+function login_table() {
+cat << HTMLCODE
+<form method=get>
+    <table border=1>
+	<tr><td>AUTHKEY</td><td><input type="text" name="authkey"/></td></tr>
+	<tr><th colspan=2><input type=submit value="do it"/></th></tr>
+    </table>
+</form>
+HTMLCODE
+}
+
+function player() {
+    local non_yt_pattern='^cust.*';
+    local peekNext=`route_ajax::next_id`
+    local current_id=`cat $DIR/../current_id`
+    local previous_id=`cat $DIR/../previous_id`
+
+    if [[ `echo $previous_id | egrep -c $non_yt_pattern` -gt 0 ]]
+    then
+        local previous='custom file'
+    else
+	local previous="<img id=prev_img width=300 src='/cgi-bin/v2/app.sh?route=thumbnail&id=$previous_id' />"
+    fi
+
+    if [[ `echo $current_id | egrep -c $non_yt_pattern` -gt 0 ]]
+    then
+	local current='custom file'
+    else
+	local current="<img id=current_img width=640 src='/cgi-bin/v2/app.sh?route=thumbnail&id=$current_id' />"
+    fi
+    if [[ `echo $peekNext | egrep -c $non_yt_pattern` -gt 0 ]]
+    then
+	local next='custom file'
+    else
+	local next="<img id=next_img width=300 src='/cgi-bin/v2/app.sh?route=thumbnail&id=$peekNext' />"
+    fi
+cat << HTMLCODE
+        <table border=1>
+        <tr>
+            <th>Previous:</th>
+            <th valign=middle colspan=2>Now playing:</th>
+            <th>Next:</th>
+        </tr>
+	<tr>
+            <th>
+                $previous
+            </th>
+            <th colspan=2>
+                $current
+            </th>
+            <th>
+                $next
+            </th>
+        </tr>
+        <tr>
+            <td id='prev_id'>$previous_id</td>
+            <th>ID</th><td id="cur_id">$current_id</td>
+            <td id='next_id'>$peekNext</td>
+        </tr>
+        <tr>
+	    <td rowspan=3 id=prev_title>`route_ajax::title $previous_id`</td>
+	    <th>Title</th><td id=current_title>`route_ajax::title $current_id`</td>
+	    <td rowspan=3 id=next_title>`route_ajax::title $peekNext`</td>
+	</tr>
+	<tr>
+            <th>Progress</th><td id='timer'>`cat /volatile/ffout | tr "\r" "\n" | tail -n 1 | cut -d= -f3 | cut -d\  -f1` / `cat ../current_meta | cut -d\: -f2- | cut -d, -f1 | sed -e 's/[hms]//g'`</td>
+        </tr>
+        <tr>
+            <th>Listen</th><td><a target='stream' href='https://ristan.barbosthedog.eu:4612/stream.ogg'>stream</a></td>
+        </tr>
+        </table>
+HTMLCODE
+}
+
+function statistics() {
+cat << HTMLCODE
+    <table border=1>
+    <tr>
+        <th colspan=2>Stats</th>
+    </tr>
+    <tr>
+        <th>Total songs in repeat queue</th><td>`curl -q http://rabbits:rabbits@rabbits:15672/api/queues/%2f/idle-queue 2>/dev/null | jq .messages`</td>
+    </tr>
+    <tr>
+        <th>Total songs in request queue</th><td>`curl -q http://rabbits:rabbits@rabbits:15672/api/queues/%2f/youtube-playlist-queue 2>/dev/null | jq .messages`</td>
+    </tr>
+    <tr>
+        <th>Total pending (skip) commands</th><td>`curl -q http://rabbits:rabbits@rabbits:15672/api/queues/%2f/command-queue 2>/dev/null | jq .messages`</td>
+    </tr>
+    <tr>
+        <th>Coolcat actions (global)</th><td>`echo $COOLCAT_AMOUNT`</td>
+    </tr>
+    <tr>
+        <th>Coolcat cooldown (global, seconds)</th><td>`echo $COOLCAT_TIME`</td>
+    </tr>
+    <tr>
+        <th>Time since log in</th><td>`webauth::session_time`</td>
+    </tr>
+    <tr>
+        <th>Coolcat coolness</th><td>`coolcat::cat_coolness` (`coolcat::coolcat_action_count`)</td>
+    </tr>
+    </table>
+HTMLCODE
+}
+
+function chat() {
+    local out=`route_ajax::messages 20 -1`
+    local len=`echo "$out" | wc -l`
+    let len=len-2
+    for (( i=0; i<$len; i++ ))
+    do
+	local uid=`echo "$out" | jq .[$i].uid`
+	local date=`echo "$out" | jq .[$i].date`
+	local message=`echo "$out" | jq .[$i].message`
+	local chatrows=`echo -e "$chatrows\n<tr><td>$date</td><td>$uid</td><td>$message</td></tr>" | tr -d '"'`
+    done
+    cat << HTMLCODE
+    <table border=1>
+    <tr><th>when</th><th>who</th><th>what</th></tr>
+    $chatrows
+HTMLCODE
+    if [[ `webauth::is_authorized` -gt 0 ]]
+    then
+    cat << HTMLCODE
+	<tr><td colspan=3>
+	    <form method="post" action='/cgi-bin/v2/app.sh?route=setmessage'>
+	    <input type=text maxlength=160 name=message><input type=submit value='say it'>
+	    </form>
+	</tr>
+HTMLCODE
+    fi
+
+    cat << HTMLCODE
+    </table>
+HTMLCODE
+}
+
+function commands() {
+cat << HTMLCODE
+    <table border=1>
+        <tr><th colspan=2>Control</th></tr>
+        <tr>
+            <th>Add</th>
+            <td>
+                <form method=post action='/cgi-bin/v2/app.sh?route=add'>
+                <table border=1>
+                <tr>
+                    <th>
+                        YTID (https://youtu.be/watch?v=<font color=red>dQw4w9WgXcQ</font>)
+                    </th>
+                    <td>
+                        <input type=text name=ytid id="ytinput">
+                    </td>
+                    <th rowspan=2>
+                        <input type=submit value='Add'>
+                    </th>
+                </tr>
+                </table>
+            </form>
+	    <form method=post enctype="multipart/form-data" action="/cgi-bin/v2/app.sh?route=add_file">
+	    <table border=1>
+	    <tr><td><input type=file accept="audio/*" name="newfile" /></td><td><input type=submit value="Add file" /></td></tr>
+	    </table>
+	    </form>
+            </td>
+        </tr>
+        <tr>
+            <th>Remove</th>
+            <td>
+                <form method=post border=1 action='/cgi-bin/v2/app.sh?route=skip'>
+                <table border=1>
+                <tr>
+                    <th>Skips available</th>
+                    <td>`redis-cli -h redis --raw get skipcounter`</td>
+                    <th rowspan=3>
+                        <input type=submit value='Skip'>
+                    </th>
+                <tr>
+                    <th>
+                        Remove from playlist [consumes 5 tokens]:
+                    </th>
+                    <td>
+                        <input type=checkbox name=remove value=1>
+                    </td>
+                </tr>
+                </table>
+            </form>
+            </td>
+        </tr>
+        </table>
+HTMLCODE
+}

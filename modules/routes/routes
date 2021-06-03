@@ -1,0 +1,101 @@
+#!/bin/bash
+#NAMESPACE=routes
+
+dependencies::depends "routes/route_default"
+dependencies::depends "routes/route_add"
+dependencies::depends "routes/route_skip"
+dependencies::depends "routes/route_ajax"
+dependencies::depends "http/webauth"
+
+function headers(route) {
+    case $route in
+	'setmessage')
+	route_ajax::redirect_home
+	;;
+	'thumbnail')
+	id=`http::get_param id`
+	route_ajax::thumbnail $id
+	;;
+	'timer')
+	route_ajax::headers
+	;;
+	'current_id')
+	route_ajax::headers
+	;;
+	'next_id')
+	route_ajax::headers
+	;;
+	'previous_id')
+	route_ajax::headers
+	;;
+	'add')
+	route_add::headers
+	;;
+	'add_file')
+	route_add::headers
+	;;
+	'skip')
+	route_skip::headers
+	;;
+	*)
+        route_default::headers
+	;;
+    esac
+}
+
+
+function get_route(route) {
+    if [[ $route == "" ]]
+    then
+	echo 'default'
+    fi
+    echo $route
+}
+
+function show(route) {
+    case $route in
+	'setmessage')
+	    if [[ `webauth::is_authorized` -lt 1 ]]; then return 1; fi
+	    dependencies::depends "extlib/extlib_crc32"
+	    extlib_crc32::init
+	    local userid=`webauth::getid`
+	    local uid=`extlib_crc32::crc32_string $userid`
+	    message=`http::get_post message`
+	    route_ajax::setmessage "$uid" "$message"
+	;;
+	'getmessage')
+	route_ajax::messages "10" "-1"    
+	;;
+	'timer')
+	route_ajax::timer
+	;;
+	'title')
+	id=`http::get_param id`
+	if [[ $id != "" ]] 
+	then
+	    route_ajax::title $id
+	fi
+	;;
+	'current_id')
+	route_ajax::current_id
+	;;
+	'next_id')
+	route_ajax::next_id
+	;;
+	'previous_id')
+	route_ajax::previous_id
+	;;
+	'skip')
+	route_skip::show
+	;;
+	'add')
+	route_add::show
+	;;
+	'add_file')
+	route_add::add_file
+	;;
+	*)
+        route_default::show
+	;;
+    esac
+}
