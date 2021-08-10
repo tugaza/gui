@@ -9,9 +9,9 @@ function headers() {
 }
 
 function timer() {
-    echo `cat /volatile/ffout | tr "\r" "\n" | tail -n 1 | cut -d= -f3 | cut -d\  -f1` / `cat ../current_meta | cut -d\: -f2- | cut -d, -f1 | sed -e 's/[hms]//g'`
+    echo `cat /volatile/ffout | tr "\r" "\n" | tail -n 1 | cut -d= -f3 | cut -d\  -f1` / `cat $SHARED_STORAGE/current_meta | cut -d\: -f2- | cut -d, -f1 | sed -e 's/[hms]//g'`
 }
 
 function current_id() {
-    cat $DIR/../current_id
+    cat $SHARED_STORAGE/current_id
 }

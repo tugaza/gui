@@ -61,27 +61,27 @@ HTMLCODE
 function player() {
     local non_yt_pattern='^cust.*';
     local peekNext=`route_ajax::next_id`
-    local current_id=`cat $DIR/../current_id`
-    local previous_id=`cat $DIR/../previous_id`
+    local current_id=`cat $SHARED_STORAGE/current_id`
+    local previous_id=`cat $SHARED_STORAGE/previous_id`
 
     if [[ `echo $previous_id | egrep -c $non_yt_pattern` -gt 0 ]]
     then
         local previous='custom file'
     else
-	local previous="<img id=prev_img width=300 src='/cgi-bin/v2/app.sh?route=thumbnail&id=$previous_id' />"
+	local previous="<img id=prev_img width=300 src='$BASE_DIR/app.sh?route=thumbnail&id=$previous_id' />"
     fi
 
     if [[ `echo $current_id | egrep -c $non_yt_pattern` -gt 0 ]]
     then
 	local current='custom file'
     else
-	local current="<img id=current_img width=640 src='/cgi-bin/v2/app.sh?route=thumbnail&id=$current_id' />"
+	local current="<img id=current_img width=640 src='$BASE_DIR/app.sh?route=thumbnail&id=$current_id' />"
     fi
     if [[ `echo $peekNext | egrep -c $non_yt_pattern` -gt 0 ]]
     then
 	local next='custom file'
     else
-	local next="<img id=next_img width=300 src='/cgi-bin/v2/app.sh?route=thumbnail&id=$peekNext' />"
+	local next="<img id=next_img width=300 src='$BASE_DIR/app.sh?route=thumbnail&id=$peekNext' />"
     fi
 cat << HTMLCODE
         <table border=1>
@@ -112,10 +112,10 @@ cat << HTMLCODE
 	    <td rowspan=3 id=next_title>`route_ajax::title $peekNext`</td>
 	</tr>
 	<tr>
-            <th>Progress</th><td id='timer'>`cat /volatile/ffout | tr "\r" "\n" | tail -n 1 | cut -d= -f3 | cut -d\  -f1` / `cat ../current_meta | cut -d\: -f2- | cut -d, -f1 | sed -e 's/[hms]//g'`</td>
+            <th>Progress</th><td id='timer'>`cat /volatile/ffout | tr "\r" "\n" | tail -n 1 | cut -d= -f3 | cut -d\  -f1` / `cat $SHARED_STORAGE/current_meta | cut -d\: -f2- | cut -d, -f1 | sed -e 's/[hms]//g'`</td>
         </tr>
         <tr>
-            <th>Listen</th><td><a target='stream' href='https://ristan.barbosthedog.eu:4612/stream.ogg'>stream</a></td>
+            <th>Listen</th><td><a target='stream' href='$ADVERTISED_HOST/stream.ogg'>stream</a></td>
         </tr>
         </table>
 HTMLCODE
@@ -128,13 +128,13 @@ cat << HTMLCODE
         <th colspan=2>Stats</th>
     </tr>
     <tr>
-        <th>Total songs in repeat queue</th><td>`curl -q http://rabbits:rabbits@rabbits:15672/api/queues/%2f/idle-queue 2>/dev/null | jq .messages`</td>
+        <th>Total songs in repeat queue</th><td>`queue_client::get_count idle-queue`</td>
     </tr>
     <tr>
-        <th>Total songs in request queue</th><td>`curl -q http://rabbits:rabbits@rabbits:15672/api/queues/%2f/youtube-playlist-queue 2>/dev/null | jq .messages`</td>
+        <th>Total songs in request queue</th><td>`queue_client::get_count youtube-playlist-queue`</td>
     </tr>
     <tr>
-        <th>Total pending (skip) commands</th><td>`curl -q http://rabbits:rabbits@rabbits:15672/api/queues/%2f/command-queue 2>/dev/null | jq .messages`</td>
+        <th>Total pending (skip) commands</th><td>`queue_client::get_count command-queue`</td>
     </tr>
     <tr>
         <th>Coolcat actions (global)</th><td>`echo $COOLCAT_AMOUNT`</td>
@@ -172,7 +172,7 @@ HTMLCODE
     then
     cat << HTMLCODE
 	<tr><td colspan=3>
-	    <form method="post" action='/cgi-bin/v2/app.sh?route=setmessage'>
+	    <form method="post" action="$BASE_DIR/app.sh?route=setmessage">
 	    <input type=text maxlength=160 name=message><input type=submit value='say it'>
 	    </form>
 	</tr>
@@ -191,7 +191,7 @@ cat << HTMLCODE
         <tr>
             <th>Add</th>
             <td>
-                <form method=post action='/cgi-bin/v2/app.sh?route=add'>
+                <form method=post action="$BASE_DIR/app.sh?route=add">
                 <table border=1>
                 <tr>
                     <th>
@@ -206,7 +206,7 @@ cat << HTMLCODE
                 </tr>
                 </table>
             </form>
-	    <form method=post enctype="multipart/form-data" action="/cgi-bin/v2/app.sh?route=add_file">
+	    <form method=post enctype="multipart/form-data" action="$BASE_DIR/app.sh?route=add_file">
 	    <table border=1>
 	    <tr><td><input type=file accept="audio/*" name="newfile" /></td><td><input type=submit value="Add file" /></td></tr>
 	    </table>
@@ -216,7 +216,7 @@ cat << HTMLCODE
         <tr>
             <th>Remove</th>
             <td>
-                <form method=post border=1 action='/cgi-bin/v2/app.sh?route=skip'>
+                <form method=post border=1 action="$BASE_DIR/app.sh?route=skip">
                 <table border=1>
                 <tr>
                     <th>Skips available</th>

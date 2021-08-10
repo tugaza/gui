@@ -8,7 +8,7 @@ function update_timer()
 	if (ajax.readyState == 4 && ajax.status == 200)
             document.getElementById('timer').innerHTML = ajax.responseText;
     }
-    ajax.open("GET", "/cgi-bin/v2/app.sh?route=timer", true);
+    ajax.open("GET", "/cgi-bin/app.sh?route=timer", true);
     ajax.send();
 }
 
@@ -28,7 +28,7 @@ function update_id()
 	    }
 	}
     }
-    ajax.open("GET", "/cgi-bin/v2/app.sh?route=current_id", true);
+    ajax.open("GET", "/cgi-bin/app.sh?route=current_id", true);
     ajax.send();
 }
 

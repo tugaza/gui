@@ -1,0 +1,17 @@
+#NAMESPACE=queue_client
+
+function peek(queuename) {
+    redis-cli --raw -h redis LRANGE $queuename 0 0
+}
+
+function get(queuename) {
+    redis-cli --raw -h redis LPOP $queuename
+}
+
+function publish(queuename message) {
+    redis-cli --raw -h redis RPUSH $queuename $message
+}
+
+function get_count(queuename) {
+    redis-cli --raw -h redis LLEN $queuename
+}

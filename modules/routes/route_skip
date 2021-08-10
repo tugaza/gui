@@ -4,13 +4,14 @@
 dependencies::depends "http/http"
 dependencies::depends "http/webauth"
 dependencies::depends "coolcat/coolcat"
+dependencies::depends "queue/client"
 
 function headers() {
     http::set_header "Content-Type" "text/html"
     if [[ `webauth::is_authorized` -gt 0 ]]
     then
 	http::set_header "Status" "200"
-	http::set_header "Refresh" "1; url=/cgi-bin/v2/app.sh?route=default"
+	http::set_header "Refresh" "1; url=/cgi-bin/app.sh?route=default"
     else
         http::set_header "Status" "403"
     fi
@@ -27,10 +28,9 @@ function show() {
     then
 	if [[ `http::get_post remove` -eq 1 ]]
 	then
-	    amqp-publish -u amqp://rabbits:rabbits@rabbits:5672 -e command-queue -r command-queue -p -b "skip-remove"
-	    redis-cli -h redis --raw decr songcounter
+	    queue_client::publish command-queue "skip-remove"
 	else
-	    amqp-publish -u amqp://rabbits:rabbits@rabbits:5672 -e command-queue -r command-queue -p -b "skip"
+	    queue_client::publish command-queue "skip"
 	fi
 	coolcat::coolcat_action
     else 

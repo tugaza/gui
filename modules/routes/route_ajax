@@ -3,38 +3,39 @@
 
 dependencies::depends "http/http"
 dependencies::depends "http/webauth"
+dependencies::depends "queue/client"
 
 function headers() {
     http::set_header "Content-Type" "text/html"
 }
 
 function redirect_home() {
-    http::set_header "Refresh" "0;url=/cgi-bin/v2/app.sh"
+    http::set_header "Refresh" "0;url=/cgi-bin/app.sh"
 }
 
 function timer() {
-    echo `cat /volatile/ffout | tr "\r" "\n" | tail -n 1 | cut -d= -f3 | cut -d\  -f1` / `cat ../current_meta | cut -d\: -f2- | cut -d, -f1 | sed -e 's/[hms]//g'`
+    echo `cat /volatile/ffout | tr "\r" "\n" | tail -n 1 | cut -d= -f3 | cut -d\  -f1` / `cat $SHARED_STORAGE/current_meta | cut -d\: -f2- | cut -d, -f1 | sed -e 's/[hms]//g'`
 }
 
 function current_id() {
-    cat $DIR/../current_id 
+    cat $SHARED_STORAGE/current_id 
 }
 
 function previous_id() {
-    cat $DIR/../previous_id 
+    cat $SHARED_STORAGE/previous_id 
 }
 
 function next_id() {
-    local peekNext=`curl -d '{"vhost":"/","name":"youtube-playlist-queue","truncate":"50000","ackmode":"ack_requeue_true","encoding":"auto","count":"1"}' -q http://rabbits:rabbits@rabbits:15672/api/queues/%2f/youtube-playlist-queue/get 2>/dev/null | jq .[].payload | head | tr -d '"'`
+    local peekNext=`queue_client::peek "youtube-playlist-queue"`
     if [[ $peekNext == "" ]]
     then
-	peekNext=`curl -d '{"vhost":"/","name":"idle-queue","truncate":"50000","ackmode":"ack_requeue_true","encoding":"auto","count":"1"}' -q http://rabbits:rabbits@rabbits:15672/api/queues/%2f/idle-queue/get 2>/dev/null | jq .[].payload | head | tr -d '"'`
+	peekNext=`queue_client::peek "idle-queue"`
     fi
     echo $peekNext
 }
 
 function title(id) {
-    cat $DIR/../cache/$id.info.json | jq .title | tr -d '"'
+    cat $SHARED_STORAGE/cache/$id.info.json | jq .title | tr -d '"'
 }
 
 function messages(count order) {
@@ -61,14 +62,14 @@ function setmessage(uid message) {
 }
 
 function thumbnail(id) {
-    if [[ -f $DIR/../cache/$id.jpg ]]
+    if [[ -f $SHARED_STORAGE/cache/$id.jpg ]]
     then
-	http::serve_file $DIR/../cache/$id.jpg
+	http::serve_file $SHARED_STORAGE/cache/$id.jpg
     else
-	if [[ -f $DIR/../cache/$id.webp ]]
+	if [[ -f $SHARED_STORAGE/cache/$id.webp ]]
 	then
-		convert $DIR/../cache/$id.webp $DIR/../cache/$id.jpg
-		http::serve_file $DIR/../cache/$id.jpg
+		convert $SHARED_STORAGE/cache/$id.webp $SHARED_STORAGE/cache/$id.jpg
+		http::serve_file $SHARED_STORAGE/cache/$id.jpg
 	else
 		http::serve_file $DIR/data/broken.jpg
 	fi
