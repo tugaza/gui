@@ -25,3 +25,4 @@ COOLCAT_AMOUNT=3
 SHARED_STORAGE="/data/"
 
 BASE_DIR="/cgi-bin"
+ADVERTISED_HOST='https://localhost:1235'
