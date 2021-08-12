@@ -26,3 +26,4 @@ SHARED_STORAGE="/data/"
 
 BASE_DIR="/cgi-bin"
 ADVERTISED_HOST='https://localhost:1235'
+RADIO_TITLE='Tugaza Radio'

@@ -19,10 +19,12 @@ JSCODE
 }
 
 function show() {
+    local current_id=`cat $SHARED_STORAGE/current_id`
+
 cat << HTMLCODE
     <html>
     <head>
-        <title>Tugaza @ `date --utc`</title>
+        <title>`route_ajax::title $current_id` `echo $RADIO_TITLE` @ `date --utc`</title>
     </head>
     <body style="font-family: monospace;">
     `this::player`
