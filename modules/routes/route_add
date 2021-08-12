@@ -11,7 +11,7 @@ function headers() {
     if [[ `webauth::is_authorized` -gt 0 ]]
     then
 	http::set_header "Status" "201"
-	http::set_header "Refresh" "1; url=/cgi-bin/app.sh?route=default"
+	http::set_header "Refresh" "1; url=$BASE_DIR/app.sh?route=default"
     else
         http::set_header "Status" "403"
 	return 1

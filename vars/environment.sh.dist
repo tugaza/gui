@@ -2,7 +2,7 @@
 
 DIR=`dirname "${BASH_SOURCE[1]}"`
 SCRIPT_DIR=$DIR
-GLOBAL_REPOSITORY_ADDRESS="https://raw.githubusercontent.com/mindaugasbarysas/bashwithnails/master/sample_repo/repofile"
+GLOBAL_REPOSITORY_ADDRESS="https://raw.githubusercontent.com/tugaza/lib/master/repofile"
 GLOBAL_CACHE_DIR="$DIR/cache"
 MODULE_DIR="modules"
 if [[ -f /sbin/md5 ]]
