@@ -75,7 +75,7 @@ function show() {
 }
 
 function queue(id) {
-    queue_client::publish "youtube-playlist-queue" $id
+    queue_client::publish $REQUEST_QUEUE $id
 #    amqp-publish -u amqp://rabbits:rabbits@rabbits:5672 -e youtube-playlist-queue -r youtube-playlist-queue -p -b $id
     coolcat::coolcat_action
 }

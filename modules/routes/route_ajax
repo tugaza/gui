@@ -4,6 +4,7 @@
 dependencies::depends "http/http"
 dependencies::depends "http/webauth"
 dependencies::depends "queue/client"
+dependencies::depends "player/playlister"
 
 function headers() {
     http::set_header "Content-Type" "text/html"
@@ -26,12 +27,7 @@ function previous_id() {
 }
 
 function next_id() {
-    local peekNext=`queue_client::peek "youtube-playlist-queue"`
-    if [[ $peekNext == "" ]]
-    then
-	peekNext=`queue_client::peek "idle-queue"`
-    fi
-    echo $peekNext
+    playlister::peek
 }
 
 function title(id) {

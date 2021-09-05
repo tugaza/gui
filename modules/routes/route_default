@@ -4,6 +4,7 @@
 dependencies::depends "http/webauth"
 dependencies::depends "routes/route_ajax"
 dependencies::depends "coolcat/coolcat"
+dependencies::depends "timeslots/timeslots"
 
 function headers()
 {
@@ -129,11 +130,18 @@ cat << HTMLCODE
     <tr>
         <th colspan=2>Stats</th>
     </tr>
+
     <tr>
-        <th>Total songs in repeat queue</th><td>`queue_client::get_count idle-queue`</td>
+        <th>Programme</th><td>`radio_timeslots::get_timeslot_name` `radio_timeslots::get_timeslot_times`</td>
     </tr>
     <tr>
-        <th>Total songs in request queue</th><td>`queue_client::get_count youtube-playlist-queue`</td>
+        <th>Total songs in timeslot queue</th><td>`if [[ $(radio_timeslots::get_timeslot_queue) != "" ]]; then queue_client::get_count $(radio_timeslots::get_timeslot_queue); else echo "none"; fi`</td>
+    </tr>
+    <tr>
+        <th>Total songs in repeat queue</th><td>`queue_client::get_count $IDLE_QUEUE`</td>
+    </tr>
+    <tr>
+        <th>Total songs in request queue</th><td>`queue_client::get_count $REQUEST_QUEUE`</td>
     </tr>
     <tr>
         <th>Total pending (skip) commands</th><td>`queue_client::get_count command-queue`</td>
