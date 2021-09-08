@@ -42,8 +42,8 @@ function add_file() {
 	return 1
     fi
     new_file_name=cust`http::get_original_filename $file_name | tr -d '.' | tr -d '/' | tr -d '\' | tr -d "\n" | tr -d "\r" | tr -d "(" | tr -d ")" | tr -d " "`
-    cp $file_name $DIR/../cache/$new_file_name
-    if [[ $? == 0 ]]
+    cp $file_name $SHARED_STORAGE/cache/$new_file_name #FIXME: ugly hack, should use $YTDL_CACHE_DIR
+    if [[ $? -eq 0 ]]
     then
 	this::queue $new_file_name
     fi
