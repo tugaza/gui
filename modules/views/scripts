@@ -1,17 +1,15 @@
 #!/bin/bash
-#NAMESPACE=route_default
+#NAMESPACE=view_scripts
 
 dependencies::depends "http/webauth"
 dependencies::depends "routes/route_ajax"
 dependencies::depends "coolcat/coolcat"
 dependencies::depends "timeslots/timeslots"
-dependencies::depends "views/main"
-
-function headers()
-{
-    http::set_header "Refresh" "120"
-}
 
 function show() {
-    view_main::show
+cat << JSCODE
+    <script type=text/javascript>
+    `cat $DIR/data/scripts.js`
+    </script>
+JSCODE
 }

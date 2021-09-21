@@ -1,0 +1,45 @@
+#!/bin/bash
+#NAMESPACE=view_statistics
+
+dependencies::depends "coolcat/coolcat"
+dependencies::depends "queue/client"
+dependencies::depends "timeslots/timeslots"
+
+function show() {
+cat << HTMLCODE
+    <table border=1>
+    <tr>
+        <th colspan=2>Stats</th>
+    </tr>
+
+    <tr>
+        <th>Programme</th><td>`radio_timeslots::get_timeslot_name` `radio_timeslots::get_timeslot_times`</td>
+    </tr>
+    <tr>
+        <th>Total songs in timeslot queue</th><td>`if [[ $(radio_timeslots::get_timeslot_queue) != "" ]]; then queue_client::get_count $(radio_timeslots::get_timeslot_queue); else echo "none"; fi`</td>
+    </tr>
+    <tr>
+        <th>Total songs in repeat queue</th><td>`queue_client::get_count $IDLE_QUEUE`</td>
+    </tr>
+    <tr>
+        <th>Total songs in request queue</th><td>`queue_client::get_count $REQUEST_QUEUE`</td>
+    </tr>
+    <tr>
+        <th>Total pending (skip) commands</th><td>`queue_client::get_count command-queue`</td>
+    </tr>
+    <tr>
+        <th>Coolcat actions (global)</th><td>`echo $COOLCAT_AMOUNT`</td>
+    </tr>
+    <tr>
+        <th>Coolcat cooldown (global, seconds)</th><td>`echo $COOLCAT_TIME`</td>
+    </tr>
+    <tr>
+        <th>Time since log in</th><td>`webauth::session_time`</td>
+    </tr>
+    <tr>
+        <th>Coolcat coolness</th><td>`coolcat::cat_coolness` (`coolcat::coolcat_action_count`)</td>
+    </tr>
+    `for role in $ROLES; do echo "<tr><th>Have $role?</th><td>$(webauth::has_role $role)</td></tr>"; done`
+    </table>
+HTMLCODE
+}

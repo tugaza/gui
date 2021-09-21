@@ -5,6 +5,7 @@ dependencies::depends "http/http"
 dependencies::depends "http/webauth"
 dependencies::depends "coolcat/coolcat"
 dependencies::depends "queue/client"
+dependencies::depends "timeslots/timeslots"
 
 function headers() {
     http::set_header "Content-Type" "text/html"
@@ -58,7 +59,7 @@ function show() {
 
     if [[ `webauth::is_authorized` -gt 0 ]]
     then
-	local id=`http::get_post ytid`
+	local id=`http::get_post ytid | sed 's/[^a-zA-Z0-9.,:;!?@~#$%^&*()+-_]//g'`
 	if [[ `echo $id | grep 'list' -c` -gt 0 ]]
 	then
 	    echo "let's not upload lists OK? JUST ID PLOX";
@@ -66,6 +67,7 @@ function show() {
 	echo $id;
 	if [[ $id == "" ]]
 	then
+        echo "where id at"
 	    return 1
 	fi
 	this::queue $id
@@ -75,7 +77,21 @@ function show() {
 }
 
 function queue(id) {
-    queue_client::publish $REQUEST_QUEUE $id
-#    amqp-publish -u amqp://rabbits:rabbits@rabbits:5672 -e youtube-playlist-queue -r youtube-playlist-queue -p -b $id
-    coolcat::coolcat_action
+    if [[ "`http::get_post order`" == "L" && `webauth::has_role ROLE_ADD_TO_CUST_QUEUE` -eq 1 ]]; then
+        queue_client::publish_left "`this::_get_queue`" "$id"
+    else
+        queue_client::publish "`this::_get_queue`" "$id"
+    fi
+    if [[ `webauth::has_role ROLE_FOREVER_COOL` -ne 1 ]]; then
+        coolcat::coolcat_action
+    fi
+}
+
+function _get_queue() {
+    local queue=`http::get_post to_queue | sed 's/[^a-zA-Z0-9.,:;!?@~#$%^&*()+-_ ]//g'`
+    if [[ `radio_timeslots::get_all_queues | grep -c "$queue"` -ne 1 || `webauth::has_role ROLE_ADD_TO_CUST_QUEUE` -ne 1 ]]; then
+        echo "$REQUEST_QUEUE"
+        return
+    fi
+    echo $queue
 }

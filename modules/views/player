@@ -1,0 +1,67 @@
+#!/bin/bash
+#NAMESPACE=view_player
+
+dependencies::depends "routes/route_ajax"
+
+function show() {
+    local non_yt_pattern='^cust.*';
+    local peekNext=`route_ajax::next_id`
+    local current_id=`cat $SHARED_STORAGE/current_id`
+    local previous_id=`cat $SHARED_STORAGE/previous_id`
+
+    if [[ `echo $previous_id | egrep -c $non_yt_pattern` -gt 0 ]]
+    then
+        local previous='custom file'
+    else
+	local previous="<img id=prev_img width=300 src='$BASE_DIR/app.sh?route=thumbnail&id=$previous_id' />"
+    fi
+
+    if [[ `echo $current_id | egrep -c $non_yt_pattern` -gt 0 ]]
+    then
+	local current='custom file'
+    else
+	local current="<img id=current_img width=640 src='$BASE_DIR/app.sh?route=thumbnail&id=$current_id' />"
+    fi
+    if [[ `echo $peekNext | egrep -c $non_yt_pattern` -gt 0 ]]
+    then
+	local next='custom file'
+    else
+	local next="<img id=next_img width=300 src='$BASE_DIR/app.sh?route=thumbnail&id=$peekNext' />"
+    fi
+cat << HTMLCODE
+        <table border=1>
+        <tr>
+            <th>Previous:</th>
+            <th valign=middle colspan=2>Now playing:</th>
+            <th>Next:</th>
+        </tr>
+	<tr>
+            <th>
+                $previous
+            </th>
+            <th colspan=2>
+                $current
+            </th>
+            <th>
+                $next
+            </th>
+        </tr>
+        <tr>
+            <td id='prev_id'>$previous_id</td>
+            <th>ID</th><td id="cur_id">$current_id</td>
+            <td id='next_id'>$peekNext</td>
+        </tr>
+        <tr>
+	    <td rowspan=3 id=prev_title>`route_ajax::title $previous_id`</td>
+	    <th>Title</th><td id=current_title>`route_ajax::title $current_id`</td>
+	    <td rowspan=3 id=next_title>`route_ajax::title $peekNext`</td>
+	</tr>
+	<tr>
+            <th>Progress</th><td id='timer'>`cat /volatile/ffout | tr "\r" "\n" | tail -n 1 | cut -d= -f3 | cut -d\  -f1` / `cat $SHARED_STORAGE/current_meta | cut -d\: -f2- | cut -d, -f1 | sed -e 's/[hms]//g'`</td>
+        </tr>
+        <tr>
+            <th>Listen</th><td><a target='stream' href='$ADVERTISED_HOST/stream.ogg'>stream</a></td>
+        </tr>
+        </table>
+HTMLCODE
+}

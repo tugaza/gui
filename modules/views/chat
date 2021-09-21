@@ -1,0 +1,39 @@
+#!/bin/bash
+#NAMESPACE=view_chat
+
+dependencies::depends "routes/route_ajax"
+dependencies::depends "coolcat/coolcat"
+dependencies::depends "queue/client"
+dependencies::depends "timeslots/timeslots"
+
+function show() {
+    local out=`route_ajax::messages 20 -1`
+    local len=`echo "$out" | wc -l`
+    let len=len-2
+    for (( i=0; i<$len; i++ ))
+    do
+	local uid=`echo "$out" | jq .[$i].uid`
+	local date=`echo "$out" | jq .[$i].date`
+	local message=`echo "$out" | jq .[$i].message`
+	local chatrows=`echo -e "$chatrows\n<tr><td>$date</td><td>$uid</td><td>$message</td></tr>" | tr -d '"'`
+    done
+    cat << HTMLCODE
+    <table border=1>
+    <tr><th>when</th><th>who</th><th>what</th></tr>
+    $chatrows
+HTMLCODE
+    if [[ `webauth::is_authorized` -gt 0 ]]
+    then
+    cat << HTMLCODE
+	<tr><td colspan=3>
+	    <form method="post" action="$BASE_DIR/app.sh?route=setmessage">
+	    <input type=text maxlength=160 name=message><input type=submit value='say it'>
+	    </form>
+	</tr>
+HTMLCODE
+    fi
+
+    cat << HTMLCODE
+    </table>
+HTMLCODE
+}

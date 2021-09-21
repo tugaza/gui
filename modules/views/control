@@ -1,0 +1,96 @@
+#!/bin/bash
+#NAMESPACE=view_control
+
+dependencies::depends "http/webauth"
+dependencies::depends "timeslots/timeslots"
+
+function show() {
+   this::_login_table
+
+   if [[ `webauth::is_authorized` -gt 0 ]]
+    then
+        this::_commands
+    fi
+}
+
+function _login_table() {
+cat << HTMLCODE
+<form method=get>
+    <table border=1>
+	<tr><td>AUTHKEY</td><td><input type="text" name="authkey"/></td></tr>
+	<tr><th colspan=2><input type=submit value="do it"/></th></tr>
+    </table>
+</form>
+HTMLCODE
+}
+
+function _toqueue() {
+    if [[ `webauth::has_role ROLE_ADD_TO_CUST_QUEUE` -eq 1 ]]; then
+        cat << HTMLCODE
+            <select name="order">
+                <option value='L'>Next</option>
+                <option value='R'>Last</option>
+            </select>
+            <select name="to_queue">
+                `for item in $(radio_timeslots::get_all_queues); do echo "<option value='$item'>$item</option>"; done`
+            </select>
+HTMLCODE
+    fi
+}
+
+function _commands() {
+cat << HTMLCODE
+    <table border=1>
+        <tr><th colspan=2>Control</th></tr>
+        <tr>
+            <th>Add</th>
+            <td>
+                <form method=post action="$BASE_DIR/app.sh?route=add">
+                <table border=1>
+                <tr>
+                    <th>
+                        YTID (https://youtu.be/watch?v=<font color=red>dQw4w9WgXcQ</font>)
+                    </th>
+                    <td>
+                        <input type=text name=ytid id="ytinput"> `this::_toqueue`
+                    </td>
+                    <th rowspan=2>
+                        <input type=submit value='Add'>
+                    </th>
+                </tr>
+                </table>
+            </form>
+	    <form method=post enctype="multipart/form-data" action="$BASE_DIR/app.sh?route=add_file">
+	    <table border=1>
+	    <tr><td><input type=file accept="audio/*" name="newfile" /> `this::_toqueue`
+ </td><td><input type=submit value="Add file" /></td></tr>
+	    </table>
+	    </form>
+            </td>
+        </tr>
+        <tr>
+            <th>Remove</th>
+            <td>
+                <form method=post border=1 action="$BASE_DIR/app.sh?route=skip">
+                <table border=1>
+                <tr>
+                    <th>Skips available</th>
+                    <td>`redis-cli -h redis --raw get skipcounter`</td>
+                    <th rowspan=3>
+                        <input type=submit value='Skip'>
+                    </th>
+                <tr>
+                    <th>
+                        Remove from playlist [consumes 5 tokens]:
+                    </th>
+                    <td>
+                        <input type=checkbox name=remove value=1>
+                    </td>
+                </tr>
+                </table>
+            </form>
+            </td>
+        </tr>
+        </table>
+HTMLCODE
+}

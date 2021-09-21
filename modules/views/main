@@ -1,0 +1,31 @@
+#!/bin/bash
+#NAMESPACE=view_main
+
+dependencies::depends "views/chat"
+dependencies::depends "views/player"
+dependencies::depends "views/statistics"
+dependencies::depends "views/control"
+dependencies::depends "views/scripts"
+
+function show() {
+    local current_id=`cat $SHARED_STORAGE/current_id`
+
+cat << HTMLCODE
+    <html>
+    <head>
+        <title>`route_ajax::title $current_id` `echo $RADIO_TITLE` @ `date --utc`</title>
+    </head>
+    <body style="font-family: monospace;">
+    `view_player::show`
+    <table>
+    <tr><td>
+    `view_control::show`
+    </td>
+    <td>`view_statistics::show`</td></tr>
+    <tr><td colspan=2>`view_chat::show`</td></tr>
+    </table>
+    `view_scripts::show`
+    </body>
+</html>
+HTMLCODE
+}
