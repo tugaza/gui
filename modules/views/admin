@@ -1,0 +1,41 @@
+#!/bin/bash
+#NAMESPACE=view_admin
+
+dependencies::depends "timeslots/timeslots"
+dependencies::depends "queue/client"
+
+function show(queue items) {
+cat << HTMLCODE
+    <html>
+    <head>
+        <title>`echo $RADIO_TITLE` @ `date --utc` | ADMIN $queue</title>
+    </head>
+    <body style="font-family: monospace;">
+    <table>
+    <tr><th>item</th><th>thumbnail</th><th>title</th><th>action</th>
+HTMLCODE
+    for item in $items; do
+        this::_row $item
+    done
+cat << HTMLCODE
+    </table>
+    </body>
+</html>
+HTMLCODE
+}
+
+function _row(item) {
+cat << HTMLCODE
+        <tr>
+           <td>$item</td>
+            <td><img id=current_img width=320 src="$BASE_DIR/app.sh?route=thumbnail&id=$item" /></td>
+            <td>`route_ajax::title $item`</td>
+            <td>
+                <form method=post>
+                    <input type="hidden" name="itm_remove" value="$item"/>
+                    <input type="submit" value="delete all occurences" />
+                </form>
+            </td>
+        </tr>
+HTMLCODE
+}

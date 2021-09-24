@@ -1,0 +1,35 @@
+#!/bin/bash
+#NAMESPACE=route_admin
+
+dependencies::depends "http/webauth"
+dependencies::depends "timeslots/timeslots"
+dependencies::depends "views/admin"
+dependencies::depends "queue/client"
+
+function headers() {
+# nothing
+}
+
+function show() {
+    if [[ `webauth::has_role ROLE_ADMIN` -ne 1 ]];
+    then
+        http::header "Status" "403 Forbidden"
+        echo "Access denied"
+        return
+    fi
+    
+    local queue=`http::get_param queue | sed 's/[^a-zA-Z0-9.,:;!?@~#$%^&*()+-_ ]//g'`
+    if [[ `radio_timeslots::get_all_queues | grep -c "$queue"` -ne 1 ]]; then
+        http::header "Status" "404 Not sure what you looking for"
+        echo "Not sure what you looking for"
+        return
+    fi
+    
+    remove=`http::get_post itm_remove | sed 's/[^a-zA-Z0-9.,:;!?@~#$%^&*()+-_ ]//g'`
+    if [[ $remove != "" ]]; then
+        queue_client::delete "$queue" "$remove" 99999
+        logger::log "info" "$remove deleted"
+    fi
+
+    view_admin::show "$queue" "`queue_client::peek_multiple $queue 0 9999`"
+}

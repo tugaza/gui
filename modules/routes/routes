@@ -5,6 +5,7 @@ dependencies::depends "routes/route_default"
 dependencies::depends "routes/route_add"
 dependencies::depends "routes/route_skip"
 dependencies::depends "routes/route_ajax"
+dependencies::depends "routes/route_admin"
 dependencies::depends "http/webauth"
 
 function headers(route) {
@@ -34,6 +35,9 @@ function headers(route) {
 	'add_file')
 	route_add::headers
 	;;
+    'admin')
+    route_admin::headers
+    ;;
 	'skip')
 	route_skip::headers
 	;;
@@ -94,7 +98,10 @@ function show(route) {
 	'add_file')
 	route_add::add_file
 	;;
-	*)
+	'admin')
+    route_admin::show
+    ;;
+    *)
         route_default::show
 	;;
     esac
