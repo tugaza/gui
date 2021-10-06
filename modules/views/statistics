@@ -5,6 +5,19 @@ dependencies::depends "coolcat/coolcat"
 dependencies::depends "queue/client"
 dependencies::depends "timeslots/timeslots"
 
+function get_total() {
+    local total=0;
+    for queue in `radio_timeslots::get_all_queues`
+    do
+        local amount=`queue_client::get_count $queue`
+        if [[ $amount -gt 0 ]]
+        then
+            let total=$total+$amount;
+        fi
+    done
+    echo $total
+}
+
 function show() {
 cat << HTMLCODE
     <table border=1>
@@ -19,7 +32,7 @@ cat << HTMLCODE
         <th>Total songs in timeslot queue</th><td>`if [[ $(radio_timeslots::get_timeslot_queue) != "" ]]; then queue_client::get_count $(radio_timeslots::get_timeslot_queue); else echo "none"; fi`</td>
     </tr>
     <tr>
-        <th>Total songs in repeat queue</th><td>`queue_client::get_count $IDLE_QUEUE`</td>
+        <th>Total songs</th><td>`this::get_total`</td>
     </tr>
     <tr>
         <th>Total songs in request queue</th><td>`queue_client::get_count $REQUEST_QUEUE`</td>
