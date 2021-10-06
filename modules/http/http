@@ -7,8 +7,8 @@ function urldecode(thing) {
 }
 
 function parse() {
-    namespaced HTTP_QUERY_PARAMETERS=`echo $QUERY_STRING | tr "&" "\n"`
-    namespaced COOKIE_JAR=`echo $HTTP_COOKIE | tr ";" "\n" | sed -e "s/^ \+//g"`
+    export namespaced HTTP_QUERY_PARAMETERS=`echo $QUERY_STRING | tr "&" "\n"`
+    export namespaced COOKIE_JAR=`echo $HTTP_COOKIE | tr ";" "\n" | sed -e "s/^ \+//g"`
     bodyfile=`mktemp`
     cat > $bodyfile
     namespaced HTTP_POST=`cat $bodyfile | tr "&" "\n"`
@@ -86,6 +86,10 @@ function get_post(name) {
     return 0
 }
 
+function strip_all() {
+  cat - | sed 's/[^a-zA-Z0-9.,:;!?@~#$%^&*()+-_ ]//g'
+}
+
 function serve_file(filename) {
     namespaced SERVE_FILE="$filename"
 }
@@ -93,23 +97,29 @@ function serve_file(filename) {
 function output_start {
     if [[ ${namespaced SERVE_FILE} != "" ]]
     then
-	echo "Content-Type: `file --mime-type ${namespaced SERVE_FILE} | cut -d: -f2`"
-	echo ""
-	cat ${namespaced SERVE_FILE}
-	exit 0
+        this::set_header "Content-Type" "`file --mime-type ${namespaced SERVE_FILE} | cut -d: -f2`"
+        this::_headers_out
+        echo ""
+        cat ${namespaced SERVE_FILE}
+        return
     fi
 
+    this::_headers_out
+    if [[ ${namespaced NEW_COOKIE_JAR} != "" ]]
+    then
+	echo "${namespaced NEW_COOKIE_JAR}" | egrep -v "^$" | sed -e "s/^/Set-Cookie: /g"
+    fi
+    echo ""
+}
+
+function _headers_out() {
     if [[ -z ${namespaced HTTP_HEADERS} ]]
     then
 	echo "Content-Type: text/html"
     else
 	echo -e "${namespaced HTTP_HEADERS}"
     fi
-    if [[ ${namespaced NEW_COOKIE_JAR} != "" ]]
-    then
-	echo "${namespaced NEW_COOKIE_JAR}" | egrep -v "^$" | sed -e "s/^/Set-Cookie: /g"
-    fi
-    echo ""
+
 }
 
 function set_header(name value) {
@@ -122,5 +132,5 @@ function get_cookie(name) {
 }
 
 function set_cookie(name value expires) {
-    namespaced NEW_COOKIE_JAR=`echo -e "${namespaced NEW_COOKIE_JAR}\n$name=$value; Expires=$expires; Secure; HttpOnly; SameSite=Strict;"`
+    export namespaced NEW_COOKIE_JAR=`echo -e "${namespaced NEW_COOKIE_JAR}\n$name=$value; Expires=$expires; Secure; HttpOnly; SameSite=Strict;"`
 }

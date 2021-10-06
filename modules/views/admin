@@ -5,6 +5,7 @@ dependencies::depends "timeslots/timeslots"
 dependencies::depends "queue/client"
 
 function show(queue items) {
+namespaced queues="<select name=\"to_queue\">"`for item in $(radio_timeslots::get_all_queues); do echo "<option value='$item'>$item</option>"; done`"</select>"
 cat << HTMLCODE
     <html>
     <head>
@@ -34,6 +35,12 @@ cat << HTMLCODE
                 <form method=post>
                     <input type="hidden" name="itm_remove" value="$item"/>
                     <input type="submit" value="delete all occurences" />
+                </form>
+                <form method=post>
+                    ${namespaced queues}
+                    <input type="hidden" name="itm_remove" value="$item"/>
+                    <input type="submit" value="move to queue" />
+
                 </form>
             </td>
         </tr>

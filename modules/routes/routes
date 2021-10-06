@@ -101,6 +101,9 @@ function show(route) {
 	'admin')
     route_admin::show
     ;;
+    'thumbnail')
+
+    ;;
     *)
         route_default::show
 	;;

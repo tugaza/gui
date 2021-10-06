@@ -18,17 +18,28 @@ function show() {
         return
     fi
     
-    local queue=`http::get_param queue | sed 's/[^a-zA-Z0-9.,:;!?@~#$%^&*()+-_ ]//g'`
+    local queue=`http::get_param queue | http::strip_all`
     if [[ `radio_timeslots::get_all_queues | grep -c "$queue"` -ne 1 ]]; then
         http::header "Status" "404 Not sure what you looking for"
         echo "Not sure what you looking for"
         return
     fi
     
-    remove=`http::get_post itm_remove | sed 's/[^a-zA-Z0-9.,:;!?@~#$%^&*()+-_ ]//g'`
+    local remove=`http::get_post itm_remove | http::strip_all`
     if [[ $remove != "" ]]; then
         queue_client::delete "$queue" "$remove" 99999
-        logger::log "info" "$remove deleted"
+        logger::log "info" "$remove deleted from $queue"
+    fi
+    
+    local to_queue=`http::get_post to_queue | http::strip_all`
+    if [[ $to_queue != "" ]]; then
+        if [[ `radio_timeslots::get_all_queues | grep -c "$to_queue"` -ne 1 ]]; then
+            http::header "Status" "404 Not sure what you looking for"
+            echo "Not sure what you looking for"
+            return
+        fi
+        queue_client::publish "$to_queue" "$remove"
+        logger::log "info" "$remove added to $to_queue"
     fi
 
     view_admin::show "$queue" "`queue_client::peek_multiple $queue 0 9999`"
