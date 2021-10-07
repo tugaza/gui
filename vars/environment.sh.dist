@@ -31,7 +31,7 @@ SHARED_STORAGE="/data/"
 IDLE_QUEUE="idle-queue"
 REQUEST_QUEUE="request-queue"
 
-BASE_DIR="/cgi-bin"
+BASE_DIR=""
 ADVERTISED_HOST='https://localhost:1235'
 RADIO_TITLE='Tugaza Radio'
 ALLOW_SKIPPING_DURING_PEEK=0
