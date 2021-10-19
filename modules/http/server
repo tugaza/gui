@@ -9,7 +9,7 @@ function listen(ip port) {
         mkfifo /tmp/servelets
     fi
     tail -f /tmp/servelets&
-    socat -T 60 TCP4-LISTEN:$port,reuseaddr,bind=$ip,fork SYSTEM:"/bin/bash $DIR/servelet 2>>/tmp/servelets"
+    socat -T 60 TCP4-LISTEN:$port,reuseaddr,bind=$ip,fork SYSTEM:"timeout $MAX_RUN_TIME /bin/bash $DIR/servelet 2>>/tmp/servelets"
 }
 
 function ssl_listen(ip port) {
@@ -25,7 +25,7 @@ function ssl_listen(ip port) {
         cat /pki/certificate.pem /pki/privatekey.pem > /tmp/everything.pem
     fi
 
-    socat -T 60 OPENSSL-LISTEN:$port,cert=/tmp/everything.pem,verify=0,reuseaddr,bind=$ip,fork SYSTEM:"/bin/bash $DIR/servelet 2>>/tmp/servelets"
+    socat -T 60 OPENSSL-LISTEN:$port,cert=/tmp/everything.pem,verify=0,reuseaddr,bind=$ip,fork SYSTEM:"timeout $MAX_RUN_TIME /bin/bash $DIR/servelet 2>>/tmp/servelets"
 }
 
 function servelet_start() {
@@ -54,15 +54,7 @@ function servelet_start() {
     done
 
     http::set_header "Status" "200 Just dandy"
-
-    #get body in the pipe
-    if [[ "$REQUEST_URI" == "/favicon.ico" ]]; then
-        echo "HTTP/1.0 404 No favicon, get lost"
-        echo "Status: 404"
-        echo "Content-Type: text/html"
-        echo ""
-        exit 0
-    fi
+    logger::log "info" "servelet valid request $REQUEST_METHOD $REQUEST_URI $REQUEST_HTTP_VERSION"
 
     if [[ -z $CONTENT_LENGTH ]]; 
     then
@@ -74,7 +66,22 @@ function servelet_start() {
         rm $BODYFILE
     fi
 
-    logger::log "info" "servelet init done, continue as usual."
+    if [[ "$REQUEST_URI" == "/" || "$REQUEST_URI" =~ /\?(.*) || "$REQUEST_URI" =~ /app.sh(.*) || "$REQUEST_URI" =~ /cgi-bin/app.sh(.*) ]]; then
+        return
+    fi
+
+    REQUEST_URI=`echo $REQUEST_URI | sed 's/\.\.//g'` #maybe it will mitigate directory traversal?
+    if [[ -f "$DIR/data$REQUEST_URI" ]]; then
+        logger::log "info" "static file $REQUEST_URI"
+        http::serve_file $DIR/data$REQUEST_URI
+        http::output_start
+        this::end
+    fi
+
+    http::set_header "Status" "404 Never heard of 'er"
+    http::output_start
+    echo "404"
+    this::end
 }
 
 function validate_request(method uri version) {
@@ -92,5 +99,10 @@ function validate_request(method uri version) {
 function bad_request() {
     http::set_header "Status" "400 Bad Request"
     http::output_start
+    this::end
+}
+
+function end() {
+    logger::log "info" "servelet done (`http::get_set_header Status`)"
     exit 0
 }

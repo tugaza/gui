@@ -28,3 +28,5 @@ out=`routes::show "$route"`
 http::output_start
 echo "$out"
 http::clean_files
+
+httpd::end
