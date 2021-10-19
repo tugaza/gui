@@ -57,7 +57,11 @@ function has_role(role) {
 }
 
 function session_time() {
-    if [[ ${namespaced AUTHORIZED} -lt 1 ]]; then return 0; fi
+    if [[ `this::is_authorized` -ne 1 ]]
+    then
+        echo 0
+        return
+    fi
     let seconds=`date +'%s'`-`redis-cli -h redis get x-auth-${namespaced SID}:authorized_at`
     echo $seconds
 }

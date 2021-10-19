@@ -60,11 +60,13 @@ function setmessage(uid message) {
 function thumbnail(id) {
     if [[ -f $SHARED_STORAGE/cache/$id.jpg ]]
     then
-	http::serve_file $SHARED_STORAGE/cache/$id.jpg
+        http::set_header "Cache-Control" "public, max-age=1440000"
+	    http::serve_file $SHARED_STORAGE/cache/$id.jpg
     else
 	if [[ -f $SHARED_STORAGE/cache/$id.webp ]]
 	then
 		convert $SHARED_STORAGE/cache/$id.webp $SHARED_STORAGE/cache/$id.jpg
+        http::set_header "Cache-Control" "public, max-age=1440000"
 		http::serve_file $SHARED_STORAGE/cache/$id.jpg
 	else
 		http::serve_file $DIR/data/broken.jpg

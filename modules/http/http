@@ -15,22 +15,22 @@ function parse(bodyfile) {
     i=1
     for offset in $offsets
     do
-	let i=i+1
-	end=`echo $offsets | cut -d\  -f$i`
-	if [[ $end != '' ]]
-	then
-	    let offset=offset+3
-	    let length=end-offset-1
-        local filename=`mktemp`
-	    cat $bodyfile | tail -c+$offset | head -c $length > $filename
-	    meta_offset=`cat $filename | egrep -a -b -v '\n' | head -n 2 | tail -n1 | cut -d: -f1`
-	    let meta_offset=meta_offset+3
-	    cat $filename | tail -c+$meta_offset > $filename.content
-	    let meta_offset=meta_offset-3
-	    cat $filename | head -c+$meta_offset > $filename.meta
-	    rm $filename
-	    if [[ -s $filename.content ]]
+    	let i=i+1
+	    end=`echo $offsets | cut -d\  -f$i`
+	    if [[ $end != '' ]]
 	    then
+        let offset=offset+3
+        let length=end-offset-1
+        local filename=`mktemp`
+        cat $bodyfile | tail -c+$offset | head -c $length > $filename
+        meta_offset=`cat $filename | egrep -a -b -v '\n' | head -n 2 | tail -n1 | cut -d: -f1`
+        let meta_offset=meta_offset+3
+        cat $filename | tail -c+$meta_offset > $filename.content
+        let meta_offset=meta_offset-3
+        cat $filename | head -c+$meta_offset > $filename.meta
+        rm $filename
+        if [[ -s $filename.content ]]
+	      then
             if [[ `cat $filename.meta | grep -c "Content-Type"` -eq 0  ]]; then
                 local name=`cat $filename.meta | grep "Content-Disposition" | cut -d\= -f2- | tr -d "\r" | tr -d "\n" | tr -d '"'`
                 local value=`cat $filename.content | tr -d "\r" | tr -d "\n"`
@@ -89,6 +89,10 @@ function get_post(name) {
     return 0
 }
 
+function strip_all() {
+  cat - | sed 's/[^a-zA-Z0-9.,:;!?@~#$%^&*()+-_ ]//g'
+}
+
 function serve_file(filename) {
     namespaced SERVE_FILE="$filename"
 }
@@ -97,23 +101,29 @@ function output_start {
     echo "HTTP/1.0 `this::get_set_header 'Status'`"
     if [[ ${namespaced SERVE_FILE} != "" ]]
     then
-	echo "Content-Type: `file --mime-type ${namespaced SERVE_FILE} | cut -d: -f2`"
-	echo ""
-	cat ${namespaced SERVE_FILE}
-	exit 0
+        this::set_header "Content-Type" "`file --mime-type ${namespaced SERVE_FILE} | cut -d: -f2`"
+        this::_headers_out
+        echo ""
+        cat ${namespaced SERVE_FILE}
+        return
     fi
 
+    this::_headers_out
+    if [[ ${namespaced NEW_COOKIE_JAR} != "" ]]
+    then
+	echo "${namespaced NEW_COOKIE_JAR}" | egrep -v "^$" | sed -e "s/^/Set-Cookie: /g"
+    fi
+    echo ""
+}
+
+function _headers_out() {
     if [[ -z ${namespaced HTTP_HEADERS} ]]
     then
 	echo "Content-Type: text/html"
     else
 	echo -e "${namespaced HTTP_HEADERS}"
     fi
-    if [[ ${namespaced NEW_COOKIE_JAR} != "" ]]
-    then
-	echo "${namespaced NEW_COOKIE_JAR}" | egrep -v "^$" | sed -e "s/^/Set-Cookie: /g"
-    fi
-    echo ""
+
 }
 
 function set_header(name value) {
@@ -132,5 +142,5 @@ function get_cookie(name) {
 }
 
 function set_cookie(name value expires) {
-    namespaced NEW_COOKIE_JAR=`echo -e "${namespaced NEW_COOKIE_JAR}\n$name=$value; Expires=$expires; Secure; HttpOnly; SameSite=Strict;"`
+    export namespaced NEW_COOKIE_JAR=`echo -e "${namespaced NEW_COOKIE_JAR}\n$name=$value; Expires=$expires; Secure; HttpOnly; SameSite=Strict;"`
 }

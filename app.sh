@@ -13,6 +13,10 @@ bootstrap_load_module http/http
 bootstrap_load_module http/webauth
 bootstrap_load_module routes/routes
 
+while [[ `ps ax | grep -c /cgi-bin/app.sh` -gt MAX_CONCURRENCY ]]; do
+sleep 0.1;
+done;
+
 # run.
 http::parse
 webauth::init
