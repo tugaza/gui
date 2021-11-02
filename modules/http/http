@@ -98,7 +98,7 @@ function serve_file(filename) {
 }
 
 function output_start {
-    echo "HTTP/1.0 `this::get_set_header 'Status'`"
+    echo "HTTP/1.0 `this::get_set_header 'Status' | cut -d: -f2-`"
     if [[ ${namespaced SERVE_FILE} != "" ]]
     then
         this::set_header "Content-Type" "`file --mime-type ${namespaced SERVE_FILE} | cut -d: -f2`"

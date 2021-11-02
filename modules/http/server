@@ -66,7 +66,7 @@ function servelet_start() {
         rm $BODYFILE
     fi
 
-    if [[ "$REQUEST_URI" == "/" || "$REQUEST_URI" =~ /\?(.*) || "$REQUEST_URI" =~ /app.sh(.*) || "$REQUEST_URI" =~ /cgi-bin/app.sh(.*) ]]; then
+    if [[ "$REQUEST_URI" == "/" || "$REQUEST_URI" =~ /\?(.*) || "$REQUEST_URI" =~ /app.sh(.*) || "$REQUEST_URI" =~ /cgi-bin(.*) ]]; then
         return
     fi
 
@@ -78,7 +78,7 @@ function servelet_start() {
         this::end
     fi
 
-    http::set_header "Status" "404 Never heard of 'er"
+    http::set_header "Status" "404 who?"
     http::output_start
     echo "404"
     this::end
