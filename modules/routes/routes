@@ -1,11 +1,7 @@
 #!/bin/bash
 #NAMESPACE=routes
 
-dependencies::depends "routes/route_default"
-dependencies::depends "routes/route_add"
-dependencies::depends "routes/route_skip"
 dependencies::depends "routes/route_ajax"
-dependencies::depends "routes/route_admin"
 dependencies::depends "http/webauth"
 
 function headers(route) {
@@ -30,18 +26,22 @@ function headers(route) {
 	route_ajax::headers
 	;;
 	'add')
+	dependencies::depends "routes/route_add"
 	route_add::headers
 	;;
 	'add_file')
 	route_add::headers
 	;;
     'admin')
+    dependencies::depends "routes/route_admin"
     route_admin::headers
     ;;
 	'skip')
+	dependencies::depends "routes/route_skip"
 	route_skip::headers
 	;;
 	*)
+	    dependencies::depends "routes/route_default"
         route_default::headers
 	;;
     esac
@@ -90,21 +90,25 @@ function show(route) {
 	route_ajax::previous_id
 	;;
 	'skip')
+	dependencies::depends "routes/route_skip"
 	route_skip::show
 	;;
 	'add')
+	dependencies::depends "routes/route_add"
 	route_add::show
 	;;
 	'add_file')
 	route_add::add_file
 	;;
 	'admin')
+	dependencies::depends "routes/route_admin"
     route_admin::show
     ;;
     'thumbnail')
 
     ;;
     *)
+        dependencies::depends "routes/route_default"
         route_default::show
 	;;
     esac
