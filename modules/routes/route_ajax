@@ -11,7 +11,7 @@ function headers() {
 }
 
 function redirect_home() {
-    http::set_header "Refresh" "0;url=/cgi-bin/app.sh"
+    http::set_header "Refresh" "0;url=/"
 }
 
 function timer() {
