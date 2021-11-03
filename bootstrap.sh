@@ -36,8 +36,8 @@ function bootstrap_load_module()
         echo "Warning: no namespace set in $1, assuming NAMESPACE=global"
         NAMESPACE="global"
     fi
-    local COMPFILE="/tmp/shbs:${NAMESPACE}-${1//\//\~}.`md5sum $SCRIPT_DIR/$MODULE_DIR/$1 | cut -d\  -f1`"
-    if [[ -f $COMPFILE ]]; then
+    local COMPFILE="/tmp/shbs:${NAMESPACE}-${1//\//\~}.cached"
+    if [[ -f $COMPFILE && "`date +%s -r $SCRIPT_DIR/$MODULE_DIR/$1`" -le "`date +%s -r $COMPFILE`" ]]; then
         . $COMPFILE
         ____BOOTSTRAP_MODULES+=($1)
         return

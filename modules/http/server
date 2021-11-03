@@ -32,14 +32,14 @@ function servelet_start() {
     pid=$$
     logger::log "info" "worker start (pid $pid)"
     read -n 4096 -r line || this::bad_request
-    logger::log "debug" "servelet: init line $(echo "scale=3; $(date +%s.%3N) - $start_time" | bc)"
+    profile::checkpoint "servelet: init line"
     logger::log "info" "request line: $line"
     read -r REQUEST_METHOD REQUEST_URI REQUEST_HTTP_VERSION <<<"$line"
     this::validate_request "$REQUEST_METHOD" "REQUEST_URI" "REQUEST_HTTP_VERSION"
     export QUERY_STRING=`echo "$REQUEST_URI" | cut -d? -f2`
+    profile::checkpoint "worker: input validated"
 
     declare -ax REQUEST_HEADERS
-    logger::log "debug" "worker: checkpoints $(echo "scale=3; $(date +%s.%3N) - $start_time" | bc)"
     CONTENT_LENGTH=0
     while mapfile -t -n 1 line
     do
@@ -54,7 +54,7 @@ function servelet_start() {
             CONTENT_LENGTH=`echo "$line" | cut -d\  -f2-`
         fi
     done
-    logger::log "debug" "worker: read headers $(echo "scale=3; $(date +%s.%3N) - $start_time" | bc)"
+    profile::checkpoint "worker: headers parsed"
     http::set_header "Status" "200 Just dandy"
     logger::log "info" "worker valid request $REQUEST_METHOD $REQUEST_URI $REQUEST_HTTP_VERSION"
 
@@ -67,7 +67,7 @@ function servelet_start() {
         http::parse "$BODYFILE"
         rm $BODYFILE
     fi
-    logger::log "debug" "worker: body parsed $(echo "scale=3; $(date +%s.%3N) - $start_time" | bc)"
+    profile::checkpoint "worker: body parsed"
     if [[ "$REQUEST_URI" == "/" || "$REQUEST_URI" =~ /\?(.*) || "$REQUEST_URI" =~ /app.sh(.*) || "$REQUEST_URI" =~ /cgi-bin(.*) ]]; then
         return
     fi
