@@ -18,13 +18,16 @@ sleep 0.1;
 done;
 
 bootstrap_load_module http/server
+logger::log "debug" "bootstrap: http/server $(echo "scale=3; $(date +%s.%3N) - $start_time" | bc)"
 bootstrap_load_module http/http
+logger::log "debug" "bootstrap: http/http $(echo "scale=3; $(date +%s.%3N) - $start_time" | bc)"
 bootstrap_load_module http/webauth
+logger::log "debug" "bootstrap: http/webauth $(echo "scale=3; $(date +%s.%3N) - $start_time" | bc)"
 bootstrap_load_module routes/routes
+logger::log "debug" "bootstrap: http/routes $(echo "scale=3; $(date +%s.%3N) - $start_time" | bc)"
 
-logger::log "debug" "bootstrap: load modules $(echo "scale=3; $(date +%s.%3N) - $start_time" | bc)"
 httpd::servelet_start
-logger::log "debug" "servelet done $(echo "scale=3; $(date +%s.%3N) - $start_time" | bc)"
+logger::log "debug" "worker done $(echo "scale=3; $(date +%s.%3N) - $start_time" | bc)"
 # redirect away from cgi-bin
 if [[ "$REQUEST_URI" =~ /cgi-bin(.*) ]]
 then
@@ -43,11 +46,13 @@ webauth::init
 
 route=`http::get_param route`
 routes::headers "$route"
+logger::log "debug" "route done $(echo "scale=3; $(date +%s.%3N) - $start_time" | bc)"
 http::set_header "Content-Type" "text/html; charset=UTF-8"
 http::set_header "X-Powered-By" "YEAHBASH"
 out=`routes::show "$route"`
+logger::log "debug" "output collected $(echo "scale=3; $(date +%s.%3N) - $start_time" | bc)"
 http::output_start
 echo "$out"
 http::clean_files
-
+logger::log "debug" "bye bye $(echo "scale=3; $(date +%s.%3N) - $start_time" | bc)"
 httpd::end

@@ -45,7 +45,6 @@ function servelet_start() {
     do
         line=${line%%$'\r'}
         [ -z "$line" ] && break
-        logger::log "debug" "header line: '$line'"
         REQUEST_HEADERS+=("$line")
         local header_name=`echo "$line" | cut -d\  -f1`
         if [[ $header_name == "Cookie:" ]]; then
