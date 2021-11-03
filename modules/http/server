@@ -31,7 +31,7 @@ function ssl_listen(ip port) {
 function servelet_start() {
     pid=$$
     logger::log "info" "worker start (pid $pid)"
-    read -n 4096 -r line || this::bad_request
+    mapfile -t -n 1 line || this::bad_request
     profile::checkpoint "servelet: init line"
     logger::log "info" "request line: $line"
     read -r REQUEST_METHOD REQUEST_URI REQUEST_HTTP_VERSION <<<"$line"
