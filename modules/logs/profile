@@ -1,0 +1,16 @@
+#NAMESPACE=profile
+
+dependencies::depends "logs/logger"
+
+function start() {
+    export namespaced start_time=$(date +%s.%3N)
+}
+
+function checkpoint(message) {
+    logger::log "debug" "$message [$(echo "scale=3; $(date +%s.%3N) - ${namespaced start_time}" | bc)] s"
+    this::start
+}
+
+function checkpoint_with_start_time(message start_time) {
+    logger::log "debug" "$message [$(echo "scale=3; $(date +%s.%3N) - ${start_time}" | bc)] s (X)"
+}

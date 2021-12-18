@@ -1,5 +1,7 @@
 #!/bin/bash
 
+export start_time=$(date +%s.%3N)
+
 DIR=`dirname "${BASH_SOURCE[0]}"`
 if [[ -f $DIR/bootstrap.sh ]]
 then
@@ -15,13 +17,19 @@ while [[ `ps ax | grep -c servelet` -gt MAX_CONCURRENCY ]]; do
 sleep 0.1;
 done;
 
+bootstrap_load_module logs/profile
+profile::start
 bootstrap_load_module http/server
+profile::checkpoint "bootstrap: http/server"
 bootstrap_load_module http/http
+profile::checkpoint "bootstrap: http/http"
 bootstrap_load_module http/webauth
+profile::checkpoint "bootstrap: http/webauth"
 bootstrap_load_module routes/routes
+profile::checkpoint "bootstrap: http/routes"
 
 httpd::servelet_start
-
+profile::checkpoint "worker init done"
 # redirect away from cgi-bin
 if [[ "$REQUEST_URI" =~ /cgi-bin(.*) ]]
 then
@@ -36,15 +44,19 @@ then
 fi
 
 # run.
+profile::start
 webauth::init
+profile::checkpoint "webauth init"
 
 route=`http::get_param route`
 routes::headers "$route"
+profile::checkpoint "route done"
 http::set_header "Content-Type" "text/html; charset=UTF-8"
 http::set_header "X-Powered-By" "YEAHBASH"
 out=`routes::show "$route"`
+profile::checkpoint "output collected"
 http::output_start
 echo "$out"
 http::clean_files
-
+profile::checkpoint_with_start_time "bye bye" "$start_time"
 httpd::end
