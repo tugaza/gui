@@ -98,6 +98,7 @@ function show(route) {
 	route_add::show
 	;;
 	'add_file')
+    dependencies::depends "routes/route_add"
 	route_add::add_file
 	;;
 	'admin')
