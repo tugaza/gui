@@ -1,6 +1,7 @@
 #NAMESPACE=httpd
 
 dependencies::depends "logs/logger"
+dependencies::depends "logs/profile"
 dependencies::depends "http/http"
 
 function listen(ip port) {
@@ -46,12 +47,16 @@ function servelet_start() {
         line=${line%%$'\r'}
         [ -z "$line" ] && break
         REQUEST_HEADERS+=("$line")
-        local header_name=`echo "$line" | cut -d\  -f1`
-        if [[ $header_name == "Cookie:" ]]; then
+        logger::log "debug" "H: $line"
+        local header_name=`echo "$line" | cut -d\  -f1 | tr "[:upper:]" "[:lower:]"`
+        if [[ $header_name == "cookie:" ]]; then
             export HTTP_COOKIE=`echo "$line" | cut -d\  -f2-`
         fi
-        if [[ $header_name == "Content-Length:" ]]; then
+        if [[ $header_name == "content-length:" ]]; then
             CONTENT_LENGTH=`echo "$line" | cut -d\  -f2-`
+        fi
+        if [[ $header_name == "content-type:" ]]; then
+            CONTENT_TYPE=`echo $line | cut -d\  -f2-`
         fi
     done
     profile::checkpoint "worker: headers parsed"
@@ -60,11 +65,11 @@ function servelet_start() {
 
     if [[ -z $CONTENT_LENGTH ]]; 
     then
-        http::parse ""
+        http::parse "" ""
     else
         BODYFILE=`mktemp`
         head -c $CONTENT_LENGTH > $BODYFILE 
-        http::parse "$BODYFILE"
+        http::parse "$BODYFILE" "$CONTENT_TYPE"
         rm $BODYFILE
     fi
     profile::checkpoint "worker: body parsed"
