@@ -30,6 +30,7 @@ function headers(route) {
 	route_add::headers
 	;;
 	'add_file')
+	dependencies::depends "routes/route_add"
 	route_add::headers
 	;;
     'admin')
