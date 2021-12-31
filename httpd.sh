@@ -1,5 +1,5 @@
 #!/bin/bash
-
+trap "exit" EXIT
 DIR=`dirname "${BASH_SOURCE[0]}"`
 if [[ -f $DIR/bootstrap.sh ]]
 then

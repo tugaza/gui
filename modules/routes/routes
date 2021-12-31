@@ -108,6 +108,10 @@ function show(route) {
     'thumbnail')
 
     ;;
+    'backup')
+        dependencies::depends "routes/route_backup"
+        route_backup::show
+    ;;
     *)
         dependencies::depends "routes/route_default"
         route_default::show

@@ -1,0 +1,29 @@
+#!/bin/bash
+#NAMESPACE=route_backup
+
+dependencies::depends "http/webauth"
+dependencies::depends "http/http"
+dependencies::depends "timeslots/timeslots"
+dependencies::depends "views/admin"
+dependencies::depends "queue/client"
+
+function headers() {
+# nothing
+}
+
+function show() {
+    if [[ `webauth::has_role ROLE_ADMIN` -ne 1 ]];
+    then
+        http::header "Status" "403 Forbidden"
+        echo "Access denied"
+        return
+    fi
+
+    prefix=`mktemp -d`
+    for queue in `radio_timeslots::get_all_queues`; do
+        queue_client::peek_multiple $queue 0 999999 > $prefix/$queue
+    done
+
+    tar -czf /tmp/backup.tar.gz $prefix
+    http::serve_file "/tmp/backup.tar.gz"
+}
