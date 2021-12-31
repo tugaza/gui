@@ -37,6 +37,10 @@ function headers(route) {
     dependencies::depends "routes/route_admin"
     route_admin::headers
     ;;
+    'backup')
+    dependencies::depends "routes/route_backup"
+    route_backup::headers
+    ;;
 	'skip')
 	dependencies::depends "routes/route_skip"
 	route_skip::headers

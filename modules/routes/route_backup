@@ -8,10 +8,7 @@ dependencies::depends "views/admin"
 dependencies::depends "queue/client"
 
 function headers() {
-# nothing
-}
 
-function show() {
     if [[ `webauth::has_role ROLE_ADMIN` -ne 1 ]];
     then
         http::header "Status" "403 Forbidden"
@@ -25,5 +22,15 @@ function show() {
     done
 
     tar -czf /tmp/backup.tar.gz $prefix
-    http::serve_file "/tmp/backup.tar.gz"
+    rm -rf $prefix
+    http::set_header "Content-Disposition" 'attachment; filename="backup.tar.gz"'
+    http::serve_file /tmp/backup.tar.gz
+    http::output_start
+    rm -rf /tmp/backup.tar.gz
+    httpd::end
+    exit
+}
+
+function show() {
+# nothing
 }
